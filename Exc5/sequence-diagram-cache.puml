@@ -1,0 +1,37 @@
+@startuml
+title Кеширование: чтение и изменение заказа
+
+actor operator  as "Operator crm"
+
+participant crmWeb as "Crm web UI"
+participant crmApi as "Crm API"
+participant cache as "Cache"
+participant shopDb as "shopDb"
+
+== Получение информации о заказе ==
+operator -> crmWeb : request getOrderById
+crmWeb -> crmApi : getOrderById
+crmApi -> cache : getOrderById(orderId)
+alt cache hit
+    cache -> crmApi : return orderData
+else cache miss
+    cache -> shopDb : getOrderById
+    shopDb -> cache : return orderData
+    cache -> cache : save into cache orderData
+    cache -> crmApi : return orderData
+end
+crmApi -> crmWeb : orderData
+crmWeb -> operator : response orderData
+
+
+== Обновление информации о заказе ==
+operator -> crmWeb : request updateOrderById
+crmWeb -> crmApi : updateOrderById
+crmApi -> cache : updateOrderById(orderId)
+cache -> shopDb : updateOrderById(orderId)
+shopDb -> cache : return updatedOrderData
+cache -> cache : save into cache updatedOrderData
+cache -> crmApi : return updatedOrderData
+crmApi -> crmWeb : updatedOrderData
+crmWeb -> operator : response updatedOrderData
+@enduml
